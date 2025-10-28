@@ -148,7 +148,7 @@ const getWeatherDataFlow = ai.defineFlow(
     outputSchema: GetWeatherDataOutputSchema,
   },
   async ({ location, lat, lon }) => {
-    const apiKey = env.OPENWEATHER_API_KEY;
+    const apiKey = env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
     
     let weatherUrl: string;
     if (location) {

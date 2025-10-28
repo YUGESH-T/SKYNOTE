@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {env} from '@/lib/env';
 
 const GetLocationSuggestionsInputSchema = z.object({
   input: z.string().describe('The partial or misspelled city name entered by the user.'),
@@ -36,7 +37,7 @@ const getLocationSuggestionsFlow = ai.defineFlow(
         return { suggestions: [] };
     }
     
-    const apiKey = "888c6f6d1a152bfd3be977d295ab111f";
+    const apiKey = env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${input}&limit=5&appid=${apiKey}`;
 
     try {
