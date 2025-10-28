@@ -13,6 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import type { WeatherCondition } from '@/lib/weather-data';
+import { env } from '@/lib/env';
 
 const GetWeatherDataInputSchema = z.object({
   location: z.string().optional().describe('The city name to get weather data for (e.g., "London").'),
@@ -147,7 +148,7 @@ const getWeatherDataFlow = ai.defineFlow(
     outputSchema: GetWeatherDataOutputSchema,
   },
   async ({ location, lat, lon }) => {
-    const apiKey = "888c6f6d1a152bfd3be977d295ab111f";
+    const apiKey = env.OPENWEATHER_API_KEY;
     
     let weatherUrl: string;
     if (location) {
