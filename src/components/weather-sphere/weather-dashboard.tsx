@@ -1,24 +1,48 @@
-
 "use client";
 
 import { useState, useEffect, useTransition, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { type WeatherData } from '@/lib/weather-data';
-import WeatherVisualization from './weather-visualization';
 import CurrentWeather from './current-weather';
-import WeatherForecast from './weather-forecast';
 import LocationSelector from './location-selector';
 import { Loader2, Compass } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherData } from '@/ai/flows/get-weather-data';
 import { getWeatherNarrative } from '@/ai/flows/get-weather-narrative';
-import DailyTemperatureTrend from './daily-temperature-trend';
 import { cn } from '@/lib/utils';
-import type {GetWeatherDataInput} from '@/ai/flows/get-weather-data'
+import type { GetWeatherDataInput } from '@/ai/flows/get-weather-data';
 import WeatherNarrative from './weather-narrative';
-import InteractiveHourlyForecast from './interactive-hourly-forecast';
-import SunriseSunset from './sunrise-sunset';
 
-const weatherColorClasses = {
+const WeatherVisualization = dynamic(() => import('./weather-visualization'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const DailyTemperatureTrend = dynamic(() => import('./daily-temperature-trend'), {
+  loading: () => (
+    <div className="h-[220px] w-full animate-pulse rounded-lg bg-white/10" />
+  ),
+});
+
+const WeatherForecast = dynamic(() => import('./weather-forecast'), {
+  loading: () => (
+    <div className="h-[320px] w-full animate-pulse rounded-lg bg-white/10" />
+  ),
+});
+
+const InteractiveHourlyForecast = dynamic(() => import('./interactive-hourly-forecast'), {
+  loading: () => (
+    <div className="h-[180px] w-full animate-pulse rounded-lg bg-white/10" />
+  ),
+});
+
+const SunriseSunset = dynamic(() => import('./sunrise-sunset'), {
+  loading: () => (
+    <div className="h-[160px] w-full animate-pulse rounded-lg bg-white/10" />
+  ),
+});
+
+const weatherColorClasses: Record<string, string> = {
   Sunny: "from-sky-400 to-blue-600",
   Cloudy: "from-[#061a57] via-[#5a5c6a] to-[#a7a8b2]",
   Rainy: "from-indigo-600/80 to-slate-900/80",
@@ -127,32 +151,34 @@ export default function WeatherDashboard() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
         <div className={cn("absolute inset-0 z-0 bg-gradient-to-br transition-colors duration-1000", backgroundClass)}>
-            {currentWeather && <WeatherVisualization weatherCondition={currentWeather.condition} />}
+            {currentWeather && (
+              <WeatherVisualization weatherCondition={currentWeather.condition} />
+            )}
         </div>
 
         <div className={cn("relative z-10 h-screen w-full overflow-y-auto no-scrollbar", isLoading && "pointer-events-none")}>
              <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
                 <div className="w-full">
                     {currentWeather ? (
-                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
-                            {/* Left Column */}
-                            <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
-                                <LocationSelector onLocationSearch={(location) => handleLocationSearch({ location })} isLoading={isSearching} initialLocation={currentWeather.location} />
-                                <CurrentWeather data={currentWeather} />
-                                <WeatherNarrative 
-                                    narrative={weatherNarrative} 
-                                    isLoading={isGeneratingNarrative}
-                                    onRefresh={() => handleFetchNarrative(currentWeather)}
-                                />
-                                <InteractiveHourlyForecast data={currentWeather} />
-                                <SunriseSunset sunrise={currentWeather.sunrise} sunset={currentWeather.sunset} />
+                             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
+                                {/* Left Column */}
+                                <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
+                                    <LocationSelector onLocationSearch={(location) => handleLocationSearch({ location })} isLoading={isSearching} initialLocation={currentWeather.location} />
+                                    <CurrentWeather data={currentWeather} />
+                                    <WeatherNarrative 
+                                        narrative={weatherNarrative} 
+                                        isLoading={isGeneratingNarrative}
+                                        onRefresh={() => handleFetchNarrative(currentWeather)}
+                                    />
+                                    <InteractiveHourlyForecast data={currentWeather} />
+                                    <SunriseSunset sunrise={currentWeather.sunrise} sunset={currentWeather.sunset} />
+                                </div>
+                                {/* Right Column */}
+                                <div className="lg:col-span-2 flex flex-col gap-4 md:gap-6">
+                                    <DailyTemperatureTrend data={currentWeather} />
+                                    <WeatherForecast data={currentWeather} />
+                                </div>
                             </div>
-                            {/* Right Column */}
-                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-6">
-                                <DailyTemperatureTrend data={currentWeather} />
-                                <WeatherForecast data={currentWeather} />
-                            </div>
-                        </div>
                     ): (
                         <div className="flex-grow flex flex-col items-center justify-center bg-black/20 backdrop-blur-xl border border-white/10 shadow-lg rounded-lg p-6 text-center min-h-[50vh] mt-20 max-w-lg mx-auto">
                             {isLoading ? (

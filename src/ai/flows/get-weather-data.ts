@@ -31,6 +31,8 @@ const DailyDataSchema = z.object({
     humidity: z.number().describe("Average humidity percentage for the day."),
 });
 
+type DailyData = z.infer<typeof DailyDataSchema>;
+
 const GetWeatherDataOutputSchema = z.object({
     location: z.string(),
     condition: z.enum(['Sunny', 'Cloudy', 'Rainy', 'Snowy', 'Thunderstorm', 'Fog', 'Haze']),
@@ -52,8 +54,59 @@ const GetWeatherDataOutputSchema = z.object({
 });
 export type GetWeatherDataOutput = z.infer<typeof GetWeatherDataOutputSchema>;
 
+type CacheEntry = {
+  data: GetWeatherDataOutput;
+  expiry: number;
+};
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const weatherCache = new Map<string, CacheEntry>();
+
+function getCacheKey(input: GetWeatherDataInput): string | null {
+  if (input.location) {
+    return input.location.trim().toLowerCase();
+  }
+  if (typeof input.lat === 'number' && typeof input.lon === 'number') {
+    const lat = input.lat.toFixed(2);
+    const lon = input.lon.toFixed(2);
+    return `${lat}:${lon}`;
+  }
+  return null;
+}
+
+function getCachedWeather(key: string): GetWeatherDataOutput | null {
+  const cached = weatherCache.get(key);
+  if (!cached) return null;
+  if (cached.expiry <= Date.now()) {
+    weatherCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function setCachedWeather(key: string, data: GetWeatherDataOutput) {
+  weatherCache.set(key, {
+    data,
+    expiry: Date.now() + CACHE_TTL_MS,
+  });
+}
+
 export async function getWeatherData(input: GetWeatherDataInput): Promise<GetWeatherDataOutput> {
-  return getWeatherDataFlow(input);
+  const cacheKey = getCacheKey(input);
+  if (cacheKey) {
+    const cached = getCachedWeather(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  const result = await getWeatherDataFlow(input);
+
+  if (cacheKey) {
+    setCachedWeather(cacheKey, result);
+  }
+
+  return result;
 }
 
 function mapWeatherCondition(main: string): WeatherCondition {
@@ -142,7 +195,7 @@ const getWeatherDataFlow = ai.defineFlow(
             humidity: Math.round(h.main.humidity),
         }));
 
-    const dailyForecasts: { [key: string]: DailyData } = {};
+    const dailyForecasts: Record<string, DailyData> = {};
     forecastData.list.forEach((item: any) => {
         const day = format(new Date(item.dt * 1000), 'EEE');
         if (!dailyForecasts[day]) {

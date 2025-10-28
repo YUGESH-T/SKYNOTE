@@ -45,21 +45,27 @@ const getLocationSuggestionsFlow = ai.defineFlow(
             console.error(`Geocoding API request failed with status ${response.status}`);
             return { suggestions: [] };
         }
-        const data = await response.json();
-        
-        const suggestions = data.map((item: any) => {
-            let suggestion = item.name;
-            if (item.state) {
-                suggestion += `, ${item.state}`;
-            }
-            if (item.country) {
-                suggestion += `, ${item.country}`;
-            }
-            return suggestion;
-        });
 
-        // Remove duplicates
-        const uniqueSuggestions = [...new Set(suggestions)];
+        const data = await response.json() as Array<{
+          name?: string;
+          state?: string;
+          country?: string;
+        }>;
+
+        const suggestions = data
+          .map((item) => {
+            const name = item.name?.trim();
+            if (!name) return null;
+
+            const parts = [name];
+            if (item.state?.trim()) parts.push(item.state.trim());
+            if (item.country?.trim()) parts.push(item.country.trim());
+
+            return parts.join(', ');
+          })
+          .filter((value): value is string => Boolean(value));
+
+        const uniqueSuggestions = Array.from(new Set(suggestions));
 
         return { suggestions: uniqueSuggestions };
 
