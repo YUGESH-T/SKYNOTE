@@ -2,7 +2,7 @@
 
 Welcome to SKYNOTE, a modern weather application that brings forecasts to life with interactive 3D visualizations. Built with Next.js, Genkit, and Three.js, this project demonstrates how to create a rich, data-driven user experience.
 
-[Live Demo — Open SKYNOTE](https://sky-note-smoky.vercel.app/)
+[Live Demo — Open SKYNOTE](https://skynote-neon.vercel.app/)
 
 ## SKYNOTE: A Comprehensive Project Breakdown
 
