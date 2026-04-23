@@ -31,18 +31,18 @@ export default function DailyTemperatureTrend({
   const chartConfig = {
     high: {
       label: "High",
-      color: "#f97316",
+      color: "var(--weather-accent)",
     },
     low: {
       label: "Low",
-      color: "#7dd3fc",
+      color: "var(--weather-accent-soft)",
     },
   };
 
   return (
-    <Card className="weather-panel transition-all duration-300 ease-in-out">
+    <Card className="weather-panel weather-panel-secondary transition-all duration-300 ease-in-out">
       <CardHeader>
-        <CardTitle className="text-lg text-white md:text-xl">
+        <CardTitle className="weather-text-strong text-lg text-white md:text-xl">
           5-Day Temperature Trend
         </CardTitle>
       </CardHeader>

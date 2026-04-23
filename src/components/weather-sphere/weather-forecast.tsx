@@ -20,7 +20,7 @@ export default function WeatherForecast({ data, unit }: WeatherForecastProps) {
   const range = Math.max(globalHigh - globalLow, 1);
 
   return (
-    <Card className="weather-panel transition-all duration-300 ease-in-out">
+    <Card className="weather-panel weather-panel-secondary transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="weather-text-strong text-lg md:text-xl">
           5-Day Outlook

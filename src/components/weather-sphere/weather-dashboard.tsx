@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Compass } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,55 @@ const weatherColorClasses: Record<WeatherCondition, Record<TimeOfDay, string>> =
   },
 };
 
+const weatherUiTokens: Record<
+  WeatherCondition,
+  Record<
+    TimeOfDay,
+    {
+      accent: string;
+      accentSoft: string;
+      accentRgb: string;
+      edgeRgb: string;
+    }
+  >
+> = {
+  Sunny: {
+    morning: { accent: "#fbbf24", accentSoft: "#fde68a", accentRgb: "251 191 36", edgeRgb: "253 224 71" },
+    afternoon: { accent: "#38bdf8", accentSoft: "#bae6fd", accentRgb: "56 189 248", edgeRgb: "125 211 252" },
+    night: { accent: "#c4b5fd", accentSoft: "#dbeafe", accentRgb: "196 181 253", edgeRgb: "191 219 254" },
+  },
+  Cloudy: {
+    morning: { accent: "#cbd5e1", accentSoft: "#e2e8f0", accentRgb: "203 213 225", edgeRgb: "226 232 240" },
+    afternoon: { accent: "#94a3b8", accentSoft: "#cbd5e1", accentRgb: "148 163 184", edgeRgb: "203 213 225" },
+    night: { accent: "#93c5fd", accentSoft: "#cbd5e1", accentRgb: "147 197 253", edgeRgb: "191 219 254" },
+  },
+  Rainy: {
+    morning: { accent: "#38bdf8", accentSoft: "#bfdbfe", accentRgb: "56 189 248", edgeRgb: "191 219 254" },
+    afternoon: { accent: "#60a5fa", accentSoft: "#bfdbfe", accentRgb: "96 165 250", edgeRgb: "147 197 253" },
+    night: { accent: "#818cf8", accentSoft: "#bfdbfe", accentRgb: "129 140 248", edgeRgb: "165 180 252" },
+  },
+  Snowy: {
+    morning: { accent: "#a5f3fc", accentSoft: "#e0f2fe", accentRgb: "165 243 252", edgeRgb: "224 242 254" },
+    afternoon: { accent: "#7dd3fc", accentSoft: "#e0f2fe", accentRgb: "125 211 252", edgeRgb: "186 230 253" },
+    night: { accent: "#bfdbfe", accentSoft: "#e0f2fe", accentRgb: "191 219 254", edgeRgb: "219 234 254" },
+  },
+  Thunderstorm: {
+    morning: { accent: "#a78bfa", accentSoft: "#c4b5fd", accentRgb: "167 139 250", edgeRgb: "196 181 253" },
+    afternoon: { accent: "#8b5cf6", accentSoft: "#c4b5fd", accentRgb: "139 92 246", edgeRgb: "196 181 253" },
+    night: { accent: "#7c3aed", accentSoft: "#c4b5fd", accentRgb: "124 58 237", edgeRgb: "167 139 250" },
+  },
+  Fog: {
+    morning: { accent: "#e2e8f0", accentSoft: "#f8fafc", accentRgb: "226 232 240", edgeRgb: "248 250 252" },
+    afternoon: { accent: "#cbd5e1", accentSoft: "#e2e8f0", accentRgb: "203 213 225", edgeRgb: "226 232 240" },
+    night: { accent: "#94a3b8", accentSoft: "#cbd5e1", accentRgb: "148 163 184", edgeRgb: "203 213 225" },
+  },
+  Haze: {
+    morning: { accent: "#fb923c", accentSoft: "#fed7aa", accentRgb: "251 146 60", edgeRgb: "253 186 116" },
+    afternoon: { accent: "#f59e0b", accentSoft: "#fde68a", accentRgb: "245 158 11", edgeRgb: "252 211 77" },
+    night: { accent: "#f97316", accentSoft: "#fdba74", accentRgb: "249 115 22", edgeRgb: "251 146 60" },
+  },
+};
+
 export default function WeatherDashboard() {
   const { unit, setUnit } = useTemperatureUnit();
   const {
@@ -110,11 +160,24 @@ export default function WeatherDashboard() {
       statusMessage ||
       "Search for a city to explore the latest forecast with a visual weather scene.";
 
+  const weatherSceneKey = weather
+    ? `${weather.location}-${weather.condition}-${weather.timeOfDay}-${weather.lastUpdated}`
+    : "empty-state";
+
+  const sceneStyle = (weather
+    ? {
+        "--weather-accent": weatherUiTokens[weather.condition][weather.timeOfDay].accent,
+        "--weather-accent-soft": weatherUiTokens[weather.condition][weather.timeOfDay].accentSoft,
+        "--weather-accent-rgb": weatherUiTokens[weather.condition][weather.timeOfDay].accentRgb,
+        "--weather-edge-rgb": weatherUiTokens[weather.condition][weather.timeOfDay].edgeRgb,
+      }
+    : undefined) as CSSProperties | undefined;
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-background">
       <div
         className={cn(
-          "absolute inset-0 z-0 bg-gradient-to-br transition-colors duration-1000",
+          "absolute inset-0 z-0 bg-gradient-to-br transition-colors duration-[1400ms]",
           backgroundClass
         )}
       >
@@ -129,8 +192,11 @@ export default function WeatherDashboard() {
         <div className="weather-noise pointer-events-none absolute inset-0 opacity-40" />
       </div>
 
-      <div className="relative z-10 min-h-screen w-full overflow-y-auto no-scrollbar">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
+      <div
+        className="relative z-10 min-h-screen w-full overflow-y-auto no-scrollbar"
+        style={sceneStyle}
+      >
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 sm:gap-5 sm:p-6 lg:gap-6 lg:p-8">
           <WeatherToolbar
             isLoading={isInitialLoading || isRefreshing}
             unit={unit}
@@ -155,26 +221,39 @@ export default function WeatherDashboard() {
           ) : null}
 
           {weather ? (
-            <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-5">
-              <div className="flex flex-col gap-4 md:gap-6 lg:col-span-3">
+            <div
+              key={weatherSceneKey}
+              className="weather-stage-enter grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-5 lg:gap-6"
+            >
+              <div className="flex flex-col gap-4 md:gap-5 lg:col-span-3 lg:gap-6">
                 <CurrentWeather
                   data={weather}
                   unit={unit}
                   isRefreshing={isRefreshing}
                   onRefresh={refresh}
                 />
-                <WeatherNarrative
-                  narrative={narrative}
-                  isLoading={isGeneratingNarrative}
-                  onRefresh={refreshNarrative}
-                  isDisabled={!weather}
-                />
-                <InteractiveHourlyForecast data={weather} unit={unit} />
-                <SunriseSunset sunrise={weather.sunrise} sunset={weather.sunset} />
+                <div className="weather-card-enter weather-card-enter-delay-1">
+                  <WeatherNarrative
+                    narrative={narrative}
+                    isLoading={isGeneratingNarrative}
+                    onRefresh={refreshNarrative}
+                    isDisabled={!weather}
+                  />
+                </div>
+                <div className="weather-card-enter weather-card-enter-delay-2">
+                  <InteractiveHourlyForecast data={weather} unit={unit} />
+                </div>
+                <div className="weather-card-enter weather-card-enter-delay-3">
+                  <SunriseSunset sunrise={weather.sunrise} sunset={weather.sunset} />
+                </div>
               </div>
-              <div className="flex flex-col gap-4 md:gap-6 lg:col-span-2">
-                <DailyTemperatureTrend data={weather} unit={unit} />
-                <WeatherForecast data={weather} unit={unit} />
+              <div className="flex flex-col gap-4 md:gap-5 lg:col-span-2 lg:gap-6">
+                <div className="weather-card-enter weather-card-enter-delay-2">
+                  <DailyTemperatureTrend data={weather} unit={unit} />
+                </div>
+                <div className="weather-card-enter weather-card-enter-delay-4">
+                  <WeatherForecast data={weather} unit={unit} />
+                </div>
               </div>
             </div>
           ) : (

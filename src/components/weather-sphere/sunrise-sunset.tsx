@@ -8,7 +8,7 @@ interface SunriseSunsetProps {
 
 export default function SunriseSunset({ sunrise, sunset }: SunriseSunsetProps) {
   return (
-    <Card className="weather-panel transition-all duration-300 ease-in-out">
+    <Card className="weather-panel weather-panel-secondary transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="weather-text-strong text-lg md:text-xl">
           Sunrise & Sunset

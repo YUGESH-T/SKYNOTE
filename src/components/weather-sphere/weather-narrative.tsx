@@ -17,7 +17,7 @@ export default function WeatherNarrative({
   isDisabled,
 }: WeatherNarrativeProps) {
   return (
-    <Card className="weather-panel transition-all duration-300 ease-in-out">
+    <Card className="weather-panel weather-panel-secondary transition-all duration-300 ease-in-out">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-sky-200" />

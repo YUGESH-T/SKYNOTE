@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, MapPin, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,12 +11,14 @@ interface LocationSelectorProps {
   onLocationSearch: (location: string) => void;
   isLoading: boolean;
   initialLocation?: string;
+  onSuggestionsOpenChange?: (isOpen: boolean) => void;
 }
 
 export default function LocationSelector({
   onLocationSearch,
   isLoading,
   initialLocation = "",
+  onSuggestionsOpenChange,
 }: LocationSelectorProps) {
   const [location, setLocation] = useState(initialLocation);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -24,7 +26,7 @@ export default function LocationSelector({
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
-  const suggestionBoxRef = useRef<HTMLDivElement>(null);
+  const selectorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
@@ -70,11 +72,13 @@ export default function LocationSelector({
   }, []);
 
   useEffect(() => {
+    if (!showSuggestions) {
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
-      if (showSuggestions) {
-        void fetchSuggestions(location);
-      }
-    }, 200);
+      void fetchSuggestions(location);
+    }, 180);
 
     return () => window.clearTimeout(timeoutId);
   }, [fetchSuggestions, location, showSuggestions]);
@@ -82,10 +86,11 @@ export default function LocationSelector({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        suggestionBoxRef.current &&
-        !suggestionBoxRef.current.contains(event.target as Node)
+        selectorRef.current &&
+        !selectorRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
+        setActiveIndex(-1);
       }
     }
 
@@ -103,10 +108,12 @@ export default function LocationSelector({
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
+
       if (showSuggestions && activeIndex >= 0 && suggestions[activeIndex]) {
         handleSuggestionClick(suggestions[activeIndex]);
         return;
       }
+
       handleSearch();
       return;
     }
@@ -145,57 +152,69 @@ export default function LocationSelector({
     location.trim().length >= 2 &&
     suggestions.length === 0;
 
-  const shouldShowDropdown =
+  const shouldShowSuggestions =
     showSuggestions && (isSuggesting || suggestions.length > 0 || showEmptyState);
 
+  useEffect(() => {
+    onSuggestionsOpenChange?.(shouldShowSuggestions);
+  }, [onSuggestionsOpenChange, shouldShowSuggestions]);
+
   return (
-    <div className="relative w-full" ref={suggestionBoxRef}>
-      <div className="flex w-full items-center space-x-2">
-        <div className="relative flex-grow">
-          <Input
-            ref={inputRef}
-            type="text"
-            role="combobox"
-            aria-expanded={showSuggestions}
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-            aria-activedescendant={
-              activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
-            }
-            value={location}
-            onChange={(event) => {
-              setLocation(event.target.value);
-              setShowSuggestions(true);
-            }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setShowSuggestions(true)}
-            placeholder="Enter a city..."
-            className="h-12 border-white/15 bg-slate-950/70 pr-12 text-base font-medium text-white placeholder:text-white/55 shadow-lg shadow-slate-950/25 backdrop-blur-xl"
-            disabled={isLoading}
-            autoComplete="off"
-          />
-          {isSuggesting ? (
-            <Loader2 className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-white/65" />
-          ) : null}
+    <div ref={selectorRef} className="w-full space-y-3">
+      <div className="group relative flex w-full items-center rounded-[1.6rem] border border-white/16 bg-slate-950/34 shadow-[0_16px_40px_rgba(2,6,23,0.2)] backdrop-blur-md transition-all duration-300 focus-within:border-white/24 focus-within:bg-slate-950/42 focus-within:shadow-[0_20px_48px_rgba(2,6,23,0.26)]">
+        <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/58 transition-colors duration-300 group-focus-within:text-white/82">
+          <MapPin className="h-[18px] w-[18px]" />
         </div>
-        <Button
-          type="submit"
-          onClick={() => handleSearch()}
-          disabled={isLoading || !location.trim()}
-          className="h-12 shrink-0 border-white/15 bg-slate-900/70 px-4 text-white shadow-lg shadow-slate-950/25 backdrop-blur-xl hover:border-sky-200/30 hover:bg-slate-800/80"
-        >
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Search className="h-5 w-5" />
-          )}
-          <span className="sr-only">Search</span>
-        </Button>
+
+        <Input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-expanded={shouldShowSuggestions}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+          }
+          value={location}
+          onChange={(event) => {
+            setLocation(event.target.value);
+            setShowSuggestions(true);
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search city, town, or place"
+          className="h-14 flex-1 border-0 bg-transparent pl-12 pr-4 text-[1.02rem] font-medium text-white placeholder:text-white/50 focus-visible:ring-0 focus-visible:ring-offset-0"
+          disabled={isLoading}
+          autoComplete="off"
+        />
+
+        {isSuggesting ? (
+          <Loader2 className="absolute right-[4.7rem] top-1/2 h-4.5 w-4.5 -translate-y-1/2 animate-spin text-white/65" />
+        ) : null}
+
+        <div className="mr-2 flex items-center">
+          <Button
+            type="button"
+            onClick={() => handleSearch()}
+            disabled={isLoading || !location.trim()}
+            className="h-10 rounded-[1rem] border border-white/16 bg-white/16 px-4 text-sm font-semibold text-white shadow-none backdrop-blur-sm transition-all duration-300 hover:border-white/24 hover:bg-white/24"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4.5 w-4.5 animate-spin" />
+            ) : (
+              <Search className="h-4.5 w-4.5" />
+            )}
+            <span className="ml-2 hidden sm:inline">Search</span>
+            <span className="sr-only">Search</span>
+          </Button>
+        </div>
       </div>
-      {shouldShowDropdown ? (
-        <Card className="absolute z-20 mt-2 w-full animate-in border-white/15 bg-slate-950/88 shadow-2xl shadow-slate-950/30 fade-in-0 zoom-in-95 backdrop-blur-xl">
+
+      {shouldShowSuggestions ? (
+        <Card className="w-full border-white/14 bg-slate-950/76 shadow-xl shadow-slate-950/24 backdrop-blur-xl">
           <CardContent className="p-2">
-            <ul id={listboxId} role="listbox">
+            <ul id={listboxId} role="listbox" className="space-y-1">
               {suggestions.map((suggestion, index) => {
                 const isActive = index === activeIndex;
 
@@ -210,18 +229,20 @@ export default function LocationSelector({
                       handleSuggestionClick(suggestion);
                     }}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className={`cursor-pointer rounded-lg px-4 py-2.5 text-sm font-medium text-white/88 transition-colors sm:text-base ${
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/88 transition-colors sm:text-base ${
                       isActive
-                        ? "bg-slate-800/95 text-white shadow-inner shadow-white/5"
-                        : "hover:bg-slate-800/70 hover:text-white"
+                        ? "bg-white/14 text-white shadow-inner shadow-white/5"
+                        : "hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    {suggestion}
+                    <MapPin className="h-4 w-4 shrink-0 text-white/58" />
+                    <span className="truncate">{suggestion}</span>
                   </li>
                 );
               })}
+
               {showEmptyState ? (
-                <li className="px-4 py-2.5 text-sm font-medium text-white/65">
+                <li className="px-4 py-3 text-sm font-medium text-white/65">
                   No matching cities found yet.
                 </li>
               ) : null}

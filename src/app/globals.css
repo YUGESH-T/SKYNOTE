@@ -123,7 +123,7 @@
     inset: 0;
     background:
       radial-gradient(circle at top left, rgba(255,255,255,0.14), transparent 30%),
-      radial-gradient(circle at bottom right, rgba(125,211,252,0.1), transparent 34%),
+      radial-gradient(circle at bottom right, rgb(var(--weather-accent-rgb, 125 211 252) / 0.16), transparent 34%),
       linear-gradient(135deg, rgba(255,255,255,0.04), transparent 52%);
     opacity: 0.62;
     transition: opacity 220ms ease;
@@ -131,14 +131,45 @@
   }
   .weather-panel:hover {
     transform: translateY(-4px);
-    border-color: rgba(191, 219, 254, 0.36);
+    border-color: rgb(var(--weather-edge-rgb, 191 219 254) / 0.36);
     box-shadow:
       0 20px 44px rgba(2, 6, 23, 0.26),
-      0 0 0 1px rgba(191, 219, 254, 0.12),
+      0 0 0 1px rgb(var(--weather-edge-rgb, 191 219 254) / 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.16);
   }
   .weather-panel:hover::before {
     opacity: 1;
+  }
+  .weather-panel-primary {
+    background:
+      linear-gradient(180deg, rgba(8, 16, 32, 0.5), rgba(8, 16, 32, 0.24)),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 22px 52px rgba(2, 6, 23, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  .weather-panel-primary::before {
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 28%),
+      radial-gradient(circle at bottom right, rgb(var(--weather-accent-rgb, 125 211 252) / 0.2), transparent 36%),
+      linear-gradient(135deg, rgba(255,255,255,0.05), transparent 55%);
+    opacity: 0.78;
+  }
+  .weather-panel-secondary {
+    background:
+      linear-gradient(180deg, rgba(10, 18, 34, 0.3), rgba(10, 18, 34, 0.14)),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  }
+  .weather-panel-tertiary {
+    background:
+      linear-gradient(180deg, rgba(10, 18, 34, 0.18), rgba(10, 18, 34, 0.08)),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    box-shadow:
+      0 10px 24px rgba(2, 6, 23, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px) saturate(120%);
   }
   .weather-panel-interactive {
     position: relative;
@@ -154,10 +185,10 @@
   }
   .weather-panel-interactive:hover {
     transform: translateY(-2px);
-    border-color: rgba(191, 219, 254, 0.28);
+    border-color: rgb(var(--weather-edge-rgb, 191 219 254) / 0.3);
     background:
       linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09)),
-      linear-gradient(135deg, rgba(15,23,42,0.12), rgba(15,23,42,0.03));
+      linear-gradient(135deg, rgb(var(--weather-accent-rgb, 125 211 252) / 0.12), rgba(15,23,42,0.03));
     box-shadow:
       0 12px 24px rgba(2, 6, 23, 0.18),
       inset 0 1px 0 rgba(255,255,255,0.1);
@@ -184,6 +215,28 @@
   }
   .weather-text-soft {
     text-shadow: 0 1px 10px rgba(2, 6, 23, 0.45);
+  }
+  .weather-stage-enter {
+    animation: weatherStageIn 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .weather-card-enter {
+    animation: weatherCardIn 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .weather-card-enter-delay-1 {
+    animation-delay: 70ms;
+    animation-fill-mode: both;
+  }
+  .weather-card-enter-delay-2 {
+    animation-delay: 140ms;
+    animation-fill-mode: both;
+  }
+  .weather-card-enter-delay-3 {
+    animation-delay: 210ms;
+    animation-fill-mode: both;
+  }
+  .weather-card-enter-delay-4 {
+    animation-delay: 280ms;
+    animation-fill-mode: both;
   }
   .animate-sun {
     animation: spin 20s linear infinite;
@@ -215,5 +268,27 @@
     0%, 100% { transform: translate(0, 0) rotate(0); }
     10%, 30%, 50%, 70%, 90% { transform: translate(-1px, 1px) rotate(-1deg); }
     20%, 40%, 60%, 80% { transform: translate(1px, -1px) rotate(1deg); }
+  }
+
+  @keyframes weatherStageIn {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.992);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes weatherCardIn {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

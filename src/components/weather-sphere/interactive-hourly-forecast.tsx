@@ -18,7 +18,7 @@ export default function InteractiveHourlyForecast({
   unit,
 }: InteractiveHourlyForecastProps) {
   return (
-    <Card className="weather-panel transition-all duration-300 ease-in-out">
+    <Card className="weather-panel weather-panel-secondary transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="weather-text-strong text-lg md:text-xl">
           Next 24 Hours
