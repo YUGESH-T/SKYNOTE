@@ -6,7 +6,6 @@ import {
   type TemperatureUnit,
   type WeatherData,
 } from "@/lib/weather-data";
-import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import WeatherIcon from "./weather-icon";
 
 interface WeatherForecastProps {
@@ -27,8 +26,8 @@ export default function WeatherForecast({ data, unit }: WeatherForecastProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[280px] md:h-auto">
-          <div className="space-y-2 pr-4 md:space-y-4">
+        <div className="h-[280px] overflow-y-auto pr-2 no-scrollbar md:h-auto md:overflow-visible md:pr-0">
+          <div className="space-y-2 md:space-y-4">
             {data.forecast.map((item, index) => (
               <div
                 key={`${item.day}-${index}`}
@@ -56,7 +55,7 @@ export default function WeatherForecast({ data, unit }: WeatherForecastProps) {
                   <span className="weather-text-soft w-16 text-right font-semibold text-white">
                     {formatTemperature(item.tempLowC, unit)}
                   </span>
-                  <div className="h-2 w-full rounded-full bg-white/20 overflow-hidden">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
                     <div
                       className="h-full bg-gradient-to-r from-blue-400 to-orange-400"
                       style={{
@@ -72,8 +71,7 @@ export default function WeatherForecast({ data, unit }: WeatherForecastProps) {
               </div>
             ))}
           </div>
-          <ScrollBar orientation="vertical" />
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

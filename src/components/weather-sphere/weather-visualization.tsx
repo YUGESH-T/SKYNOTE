@@ -484,10 +484,8 @@ export default function WeatherVisualization({
 
   const isMobile = useIsMobile();
   const [reducedMotion, setReducedMotion] = useState(false);
-  const canRenderScene = useMemo(
-    () => !isMobile && !reducedMotion,
-    [isMobile, reducedMotion]
-  );
+  const canRenderScene = useMemo(() => !reducedMotion, [reducedMotion]);
+  const sceneDensity = isMobile ? 0.42 : 1;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -528,7 +526,9 @@ export default function WeatherVisualization({
     camera.position.copy(initialPose.position);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, isMobile ? 1.15 : 2)
+    );
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(renderer.domElement);
@@ -537,8 +537,8 @@ export default function WeatherVisualization({
     controls.enableDamping = true;
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.08;
+    controls.autoRotate = !isMobile;
+    controls.autoRotateSpeed = isMobile ? 0.03 : 0.08;
     controls.maxPolarAngle = Math.PI / 2 + 0.22;
     controls.minPolarAngle = Math.PI / 2 - 0.22;
     controls.target.copy(initialPose.target);
@@ -804,7 +804,7 @@ export default function WeatherVisualization({
       controlsRef.current = null;
       ambientLightRef.current = null;
     };
-  }, [canRenderScene]);
+  }, [canRenderScene, isMobile]);
 
   useEffect(() => {
     if (!canRenderScene || !sceneRef.current) {
@@ -930,10 +930,10 @@ export default function WeatherVisualization({
       }
 
       particlesRef.current = createParticleField({
-        count: 160,
+        count: Math.max(50, Math.round(160 * sceneDensity)),
         spread: [22, 10, 14],
         color: timeOfDayRef.current === "night" ? 0xbfdbfe : 0xfef3c7,
-        size: 0.12,
+        size: isMobile ? 0.1 : 0.12,
         opacity: timeOfDayRef.current === "night" ? 0.07 : 0.12,
       });
       scene.add(particlesRef.current);
@@ -972,17 +972,17 @@ export default function WeatherVisualization({
         )
       );
       particlesRef.current = createParticleField({
-        count: 2600,
+        count: Math.max(700, Math.round(2600 * sceneDensity)),
         spread: [28, 26, 16],
         color: 0x93c5fd,
-        size: 0.05,
+        size: isMobile ? 0.04 : 0.05,
         opacity: 0.9,
       });
       secondaryParticlesRef.current = createParticleField({
-        count: 180,
+        count: Math.max(60, Math.round(180 * sceneDensity)),
         spread: [20, 6, 14],
         color: 0xffffff,
-        size: 0.18,
+        size: isMobile ? 0.14 : 0.18,
         opacity: 0.06,
       });
       scene.add(particlesRef.current, secondaryParticlesRef.current);
@@ -1004,17 +1004,17 @@ export default function WeatherVisualization({
         )
       );
       particlesRef.current = createParticleField({
-        count: 1700,
+        count: Math.max(500, Math.round(1700 * sceneDensity)),
         spread: [26, 24, 18],
         color: 0xffffff,
-        size: 0.09,
+        size: isMobile ? 0.075 : 0.09,
         opacity: 0.82,
       });
       secondaryParticlesRef.current = createParticleField({
-        count: 160,
+        count: Math.max(50, Math.round(160 * sceneDensity)),
         spread: [18, 8, 14],
         color: 0xbfe9ff,
-        size: 0.18,
+        size: isMobile ? 0.14 : 0.18,
         opacity: 0.12,
       });
       scene.add(particlesRef.current, secondaryParticlesRef.current);
@@ -1036,10 +1036,10 @@ export default function WeatherVisualization({
         )
       );
       particlesRef.current = createParticleField({
-        count: 2300,
+        count: Math.max(650, Math.round(2300 * sceneDensity)),
         spread: [28, 24, 18],
         color: 0x7dd3fc,
-        size: 0.045,
+        size: isMobile ? 0.038 : 0.045,
         opacity: 0.82,
       });
       scene.add(particlesRef.current);
@@ -1092,10 +1092,10 @@ export default function WeatherVisualization({
         )
       );
       particlesRef.current = createParticleField({
-        count: 280,
+        count: Math.max(90, Math.round(280 * sceneDensity)),
         spread: [28, 14, 16],
         color: 0xe2e8f0,
-        size: 0.24,
+        size: isMobile ? 0.18 : 0.24,
         opacity: 0.14,
       });
       scene.add(particlesRef.current);
@@ -1117,10 +1117,10 @@ export default function WeatherVisualization({
         )
       );
       particlesRef.current = createParticleField({
-        count: 240,
+        count: Math.max(80, Math.round(240 * sceneDensity)),
         spread: [28, 14, 16],
         color: 0xfde68a,
-        size: 0.22,
+        size: isMobile ? 0.16 : 0.22,
         opacity: 0.18,
       });
       scene.add(particlesRef.current);
@@ -1134,7 +1134,7 @@ export default function WeatherVisualization({
         window.clearTimeout(lightningTimeoutRef.current);
       }
     };
-  }, [canRenderScene, localHour, timeOfDay, weatherCondition]);
+  }, [canRenderScene, isMobile, localHour, sceneDensity, timeOfDay, weatherCondition]);
 
   if (!canRenderScene || !supportsWebGL()) {
     return (
