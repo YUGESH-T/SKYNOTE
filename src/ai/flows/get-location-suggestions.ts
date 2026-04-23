@@ -2,27 +2,24 @@
 
 /**
  * @fileOverview Provides location suggestions and auto-correction for weather searches.
- *
- * - getLocationSuggestions - A function that returns a list of suggested locations based on user input.
- * - GetLocationSuggestionsInput - The input type for the getLocationSuggestions function.
- * - GetLocationSuggestionsOutput - The return type for the getLocationSuggestions function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import {env} from '@/lib/env';
+import { ai } from '@/ai/genkit';
+import { env } from '@/lib/env';
+import {
+  fetchOpenWeatherJson,
+  OpenWeatherGeocodeResponseSchema,
+} from '@/lib/openweather';
+import {
+  GetLocationSuggestionsInputSchema,
+  GetLocationSuggestionsOutputSchema,
+  type GetLocationSuggestionsInput,
+  type GetLocationSuggestionsOutput,
+} from './location-contracts';
 
-const GetLocationSuggestionsInputSchema = z.object({
-  input: z.string().describe('The partial or misspelled city name entered by the user.'),
-});
-export type GetLocationSuggestionsInput = z.infer<typeof GetLocationSuggestionsInputSchema>;
-
-const GetLocationSuggestionsOutputSchema = z.object({
-    suggestions: z.array(z.string()).describe('A list of suggested city names.'),
-});
-export type GetLocationSuggestionsOutput = z.infer<typeof GetLocationSuggestionsOutputSchema>;
-
-export async function getLocationSuggestions(input: GetLocationSuggestionsInput): Promise<GetLocationSuggestionsOutput> {
+export async function getLocationSuggestions(
+  input: GetLocationSuggestionsInput
+): Promise<GetLocationSuggestionsOutput> {
   return getLocationSuggestionsFlow(input);
 }
 
@@ -34,45 +31,31 @@ const getLocationSuggestionsFlow = ai.defineFlow(
   },
   async ({ input }) => {
     if (input.length < 2) {
-        return { suggestions: [] };
+      return { suggestions: [] };
     }
-    
-    const apiKey = env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
-    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${input}&limit=5&appid=${apiKey}`;
+
+    const apiKey = env.OPENWEATHER_API_KEY;
+    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input.trim())}&limit=5&appid=${apiKey}`;
 
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            console.error(`Geocoding API request failed with status ${response.status}`);
-            return { suggestions: [] };
-        }
+      const data = await fetchOpenWeatherJson(url, OpenWeatherGeocodeResponseSchema);
 
-        const data = await response.json() as Array<{
-          name?: string;
-          state?: string;
-          country?: string;
-        }>;
+      const suggestions = data
+        .map((item) => {
+          const name = item.name?.trim();
+          if (!name) return null;
 
-        const suggestions = data
-          .map((item) => {
-            const name = item.name?.trim();
-            if (!name) return null;
+          const parts = [name];
+          if (item.state?.trim()) parts.push(item.state.trim());
+          if (item.country?.trim()) parts.push(item.country.trim());
 
-            const parts = [name];
-            if (item.state?.trim()) parts.push(item.state.trim());
-            if (item.country?.trim()) parts.push(item.country.trim());
+          return parts.join(', ');
+        })
+        .filter((value): value is string => Boolean(value));
 
-            return parts.join(', ');
-          })
-          .filter((value): value is string => Boolean(value));
-
-        const uniqueSuggestions = Array.from(new Set(suggestions));
-
-        return { suggestions: uniqueSuggestions };
-
-    } catch (error) {
-        console.error("Failed to fetch suggestions from Geocoding API:", error);
-        return { suggestions: [] };
+      return { suggestions: Array.from(new Set(suggestions)) };
+    } catch {
+      return { suggestions: [] };
     }
   }
 );

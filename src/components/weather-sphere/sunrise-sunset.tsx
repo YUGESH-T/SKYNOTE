@@ -8,24 +8,26 @@ interface SunriseSunsetProps {
 
 export default function SunriseSunset({ sunrise, sunset }: SunriseSunsetProps) {
   return (
-    <Card className="bg-black/20 backdrop-blur-xl border-white/10 shadow-lg">
+    <Card className="weather-panel transition-all duration-300 ease-in-out">
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Sunrise & Sunset</CardTitle>
+        <CardTitle className="weather-text-strong text-lg md:text-xl">
+          Sunrise & Sunset
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="weather-copy-zone space-y-4 rounded-2xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Sunrise className="w-8 h-8 text-yellow-400" />
               <div>
-                <p className="text-base text-foreground/80">Sunrise</p>
-                <p className="text-xl font-bold">{sunrise}</p>
+                <p className="text-base text-white/80">Sunrise</p>
+                <p className="weather-text-soft text-xl font-bold text-white">{sunrise}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-base text-foreground/80">Sunset</p>
-                <p className="text-xl font-bold">{sunset}</p>
+                <p className="text-base text-white/80">Sunset</p>
+                <p className="weather-text-soft text-xl font-bold text-white">{sunset}</p>
               </div>
               <Sunset className="w-8 h-8 text-orange-400" />
             </div>

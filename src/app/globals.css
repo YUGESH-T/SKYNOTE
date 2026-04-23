@@ -75,6 +75,116 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .weather-vignette {
+    background:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 28%),
+      radial-gradient(circle at bottom, rgba(2, 6, 23, 0.48), transparent 48%),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.58));
+  }
+  .weather-noise {
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.08) 0.8px, transparent 0.8px),
+      radial-gradient(rgba(255, 255, 255, 0.05) 0.8px, transparent 0.8px);
+    background-position: 0 0, 18px 18px;
+    background-size: 36px 36px;
+    mix-blend-mode: soft-light;
+  }
+  .weather-fallback-layer {
+    background:
+      radial-gradient(circle at 20% 18%, rgba(255,255,255,0.22), transparent 28%),
+      radial-gradient(circle at 78% 12%, rgba(125,211,252,0.18), transparent 24%),
+      linear-gradient(180deg, rgba(148,163,184,0.12), rgba(15,23,42,0.24) 40%, rgba(2,6,23,0.52));
+  }
+  .weather-fallback-glow {
+    background:
+      radial-gradient(circle at 50% 110%, rgba(14,165,233,0.2), transparent 36%),
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 30%);
+  }
+  .weather-panel {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background:
+      linear-gradient(180deg, rgba(10, 18, 34, 0.34), rgba(10, 18, 34, 0.16)),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    box-shadow:
+      0 16px 36px rgba(2, 6, 23, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px) saturate(130%);
+    transition:
+      transform 220ms ease,
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+  .weather-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.14), transparent 30%),
+      radial-gradient(circle at bottom right, rgba(125,211,252,0.1), transparent 34%),
+      linear-gradient(135deg, rgba(255,255,255,0.04), transparent 52%);
+    opacity: 0.62;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+  .weather-panel:hover {
+    transform: translateY(-4px);
+    border-color: rgba(191, 219, 254, 0.36);
+    box-shadow:
+      0 20px 44px rgba(2, 6, 23, 0.26),
+      0 0 0 1px rgba(191, 219, 254, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  .weather-panel:hover::before {
+    opacity: 1;
+  }
+  .weather-panel-interactive {
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.14);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.07)),
+      linear-gradient(135deg, rgba(15,23,42,0.1), rgba(15,23,42,0.02));
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+  .weather-panel-interactive:hover {
+    transform: translateY(-2px);
+    border-color: rgba(191, 219, 254, 0.28);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09)),
+      linear-gradient(135deg, rgba(15,23,42,0.12), rgba(15,23,42,0.03));
+    box-shadow:
+      0 12px 24px rgba(2, 6, 23, 0.18),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .weather-data-chip {
+    border: 1px solid rgba(255,255,255,0.14);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06)),
+      linear-gradient(135deg, rgba(15,23,42,0.12), rgba(15,23,42,0.03));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .weather-copy-zone {
+    border: 1px solid rgba(255,255,255,0.1);
+    background:
+      linear-gradient(180deg, rgba(2,6,23,0.36), rgba(2,6,23,0.18)),
+      radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 36%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      0 10px 24px rgba(2, 6, 23, 0.14);
+    backdrop-filter: blur(8px);
+  }
+  .weather-text-strong {
+    text-shadow: 0 2px 16px rgba(2, 6, 23, 0.55);
+  }
+  .weather-text-soft {
+    text-shadow: 0 1px 10px rgba(2, 6, 23, 0.45);
+  }
   .animate-sun {
     animation: spin 20s linear infinite;
   }

@@ -1,44 +1,81 @@
-import type { LucideIcon } from 'lucide-react';
-import { Sun, Cloud, CloudRain, Snowflake, Zap, CloudFog, Haze } from 'lucide-react';
+import type { LucideIcon } from "lucide-react";
+import {
+  Cloud,
+  CloudFog,
+  CloudRain,
+  Haze,
+  Snowflake,
+  Sun,
+  Zap,
+} from "lucide-react";
+import { z } from "zod";
 
-export type WeatherCondition = 'Sunny' | 'Cloudy' | 'Rainy' | 'Snowy' | 'Thunderstorm' | 'Fog' | 'Haze';
+export type WeatherCondition =
+  | "Sunny"
+  | "Cloudy"
+  | "Rainy"
+  | "Snowy"
+  | "Thunderstorm"
+  | "Fog"
+  | "Haze";
 
-export interface DailyData {
-  day: string;
-  condition: WeatherCondition;
-  tempHigh: number;
-  tempLow: number;
-  humidity: number;
-}
-export interface WeatherData {
-  location: string;
-  condition: WeatherCondition;
-  temperature: number;
-  feelsLike: number;
-  humidity: number;
-  windSpeed: number;
-  sunrise: string;
-  sunset: string;
-  currentTime: string;
-  forecast: DailyData[];
-  hourly: HourlyForecast[];
-}
+export type TemperatureUnit = "celsius" | "fahrenheit";
+export type TimeOfDay = "morning" | "afternoon" | "night";
 
-export interface Forecast {
-  day: string;
-  condition: WeatherCondition;
-  tempHigh: number;
-  tempLow: number;
-  humidity: number;
-}
+export const WeatherConditionSchema = z.enum([
+  "Sunny",
+  "Cloudy",
+  "Rainy",
+  "Snowy",
+  "Thunderstorm",
+  "Fog",
+  "Haze",
+]);
 
-export interface HourlyForecast {
-  time: string;
-  condition: WeatherCondition;
-  temperature: number;
-  windSpeed: number;
-  humidity: number;
-}
+export const TimeOfDaySchema = z.enum(["morning", "afternoon", "night"]);
+
+export const HourlyForecastSchema = z.object({
+  time: z.string(),
+  condition: WeatherConditionSchema,
+  temperatureC: z.number(),
+  windSpeedKph: z.number(),
+  humidity: z.number(),
+  precipitationChance: z.number().nullable(),
+});
+
+export const DailyDataSchema = z.object({
+  day: z.string(),
+  dateLabel: z.string(),
+  condition: WeatherConditionSchema,
+  tempHighC: z.number(),
+  tempLowC: z.number(),
+  humidity: z.number(),
+  precipitationChance: z.number().nullable(),
+});
+
+export const WeatherDataSchema = z.object({
+  location: z.string(),
+  condition: WeatherConditionSchema,
+  timeOfDay: TimeOfDaySchema,
+  localHour: z.number().int().min(0).max(23),
+  temperatureC: z.number(),
+  feelsLikeC: z.number(),
+  humidity: z.number(),
+  windSpeedKph: z.number(),
+  precipitationChance: z.number().nullable(),
+  sunrise: z.string(),
+  sunset: z.string(),
+  currentTime: z.string(),
+  currentDateLabel: z.string(),
+  timezoneOffset: z.number(),
+  forecast: z.array(DailyDataSchema),
+  hourly: z.array(HourlyForecastSchema),
+  lastUpdated: z.number(),
+});
+
+export type DailyData = z.infer<typeof DailyDataSchema>;
+export type HourlyForecast = z.infer<typeof HourlyForecastSchema>;
+export type WeatherData = z.infer<typeof WeatherDataSchema>;
 
 export const weatherIcons: Record<WeatherCondition, LucideIcon> = {
   Sunny: Sun,
@@ -47,29 +84,33 @@ export const weatherIcons: Record<WeatherCondition, LucideIcon> = {
   Snowy: Snowflake,
   Thunderstorm: Zap,
   Fog: CloudFog,
-  Haze: Haze,
+  Haze,
 };
 
-// Expanded list of locations for better autocomplete suggestions
-export const locations: { location: string }[] = [
-  { location: 'New York' },
-  { location: 'London' },
-  { location: 'Tokyo' },
-  { location: 'Paris' },
-  { location: 'Sydney' },
-  { location: 'Los Angeles' },
-  { location: 'Chicago' },
-  { location: 'Toronto' },
-  { location: 'Berlin' },
-  { location: 'Moscow' },
-  { location: 'Dubai' },
-  { location: 'Singapore' },
-  { location: 'Hong Kong' },
-  { location: 'San Francisco' },
-  { location: 'Miami' },
-  { location: 'Rome' },
-  { location: 'Madrid' },
-  { location: 'Barcelona' },
-  { location: 'Amsterdam' },
-  { location: 'Seoul' },
-];
+export function celsiusToFahrenheit(value: number): number {
+  return Math.round((value * 9) / 5 + 32);
+}
+
+export function formatTemperature(
+  valueCelsius: number,
+  unit: TemperatureUnit
+): string {
+  const value =
+    unit === "fahrenheit"
+      ? celsiusToFahrenheit(valueCelsius)
+      : Math.round(valueCelsius);
+  const suffix = unit === "fahrenheit" ? "°F" : "°C";
+
+  return `${value}${suffix}`;
+}
+
+export function formatWindSpeed(
+  valueKph: number,
+  unit: TemperatureUnit
+): string {
+  if (unit === "fahrenheit") {
+    return `${Math.round(valueKph / 1.609)} mph`;
+  }
+
+  return `${Math.round(valueKph)} km/h`;
+}

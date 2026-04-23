@@ -2,55 +2,69 @@
 
 /**
  * @fileOverview Generates a conversational weather narrative using AI.
- *
- * - getWeatherNarrative - A function that creates a human-friendly summary of the weather.
- * - GetWeatherNarrativeInput - The input type for the getWeatherNarrative function.
- * - GetWeatherNarrativeOutput - The return type for the getWeatherNarrative function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import type { GetWeatherDataOutput } from './get-weather-data';
+import { ai } from '@/ai/genkit';
+import {
+  GetWeatherDataOutputSchema,
+  GetWeatherNarrativeOutputSchema,
+  type GetWeatherNarrativeInput,
+  type GetWeatherNarrativeOutput,
+} from './weather-contracts';
 
-export type GetWeatherNarrativeInput = GetWeatherDataOutput;
+function buildFallbackNarrative(input: GetWeatherNarrativeInput): string {
+  const tomorrow = input.forecast[1] ?? input.forecast[0];
+  const forecastLine = tomorrow
+    ? `Expect ${tomorrow.condition.toLowerCase()} conditions around ${tomorrow.tempHighC}°C and ${tomorrow.tempLowC}°C next.`
+    : 'Forecast updates will appear here as more data becomes available.';
 
-const GetWeatherNarrativeOutputSchema = z.object({
-  narrative: z.string().describe('A friendly, conversational summary of the weather conditions and forecast. Should be 2-3 sentences long.'),
-});
-export type GetWeatherNarrativeOutput = z.infer<typeof GetWeatherNarrativeOutputSchema>;
+  return `${input.location} is currently ${input.temperatureC}°C with ${input.condition.toLowerCase()} skies. ${forecastLine}`;
+}
 
-export async function getWeatherNarrative(input: GetWeatherNarrativeInput): Promise<GetWeatherNarrativeOutput> {
-  return getWeatherNarrativeFlow(input);
+export async function getWeatherNarrative(
+  input: GetWeatherNarrativeInput
+): Promise<GetWeatherNarrativeOutput> {
+  try {
+    const result = await getWeatherNarrativeFlow(input);
+    const narrative = result.narrative.trim();
+
+    if (!narrative) {
+      return { narrative: buildFallbackNarrative(input) };
+    }
+
+    return { narrative };
+  } catch {
+    return { narrative: buildFallbackNarrative(input) };
+  }
 }
 
 const prompt = ai.definePrompt({
-    name: 'getWeatherNarrativePrompt',
-    input: { schema: z.any() },
-    output: { schema: GetWeatherNarrativeOutputSchema },
-    prompt: `You are a friendly and enthusiastic weather forecaster.
-    
-    Based on the following JSON weather data, generate a short, conversational, and engaging weather narrative.
-    
-    - Keep it to 2-3 sentences.
-    - Mention the location, current temperature, and condition.
-    - Briefly touch on the forecast for the next day or a notable upcoming change.
-    - Your tone should be light and personal.
+  name: 'getWeatherNarrativePrompt',
+  input: { schema: GetWeatherDataOutputSchema },
+  output: { schema: GetWeatherNarrativeOutputSchema },
+  prompt: `You are a concise weather assistant.
 
-    Weather Data:
-    \`\`\`json
-    {{{json input}}}
-    \`\`\`
-    `,
+Summarize the weather in 2 short sentences.
+- Mention the location, current condition, and current temperature in Celsius.
+- Mention one practical next-step forecast detail from the upcoming outlook.
+- Avoid hype, repetition, emojis, and filler.
+- Return plain text only.
+
+Weather data:
+{{{json input}}}`,
 });
 
 const getWeatherNarrativeFlow = ai.defineFlow(
   {
     name: 'getWeatherNarrativeFlow',
-    inputSchema: z.any(),
+    inputSchema: GetWeatherDataOutputSchema,
     outputSchema: GetWeatherNarrativeOutputSchema,
   },
-  async input => {
-    const {output} = await prompt({input});
-    return output!;
+  async (input) => {
+    const { output } = await prompt(input);
+
+    return {
+      narrative: output?.narrative?.trim() || buildFallbackNarrative(input),
+    };
   }
 );

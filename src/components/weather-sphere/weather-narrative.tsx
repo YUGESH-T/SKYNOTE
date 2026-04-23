@@ -1,41 +1,51 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { RefreshCw, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "../ui/skeleton";
 
 interface WeatherNarrativeProps {
   narrative: string | null;
   isLoading: boolean;
   onRefresh: () => void;
+  isDisabled?: boolean;
 }
 
-export default function WeatherNarrative({ narrative, isLoading, onRefresh }: WeatherNarrativeProps) {
+export default function WeatherNarrative({
+  narrative,
+  isLoading,
+  onRefresh,
+  isDisabled,
+}: WeatherNarrativeProps) {
   return (
-    <Card className="bg-black/20 backdrop-blur-xl border-white/10 shadow-lg transition-all duration-300 ease-in-out">
+    <Card className="weather-panel transition-all duration-300 ease-in-out">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-white" />
-            <CardTitle className="text-xl">AI Summary</CardTitle>
+          <Sparkles className="h-5 w-5 text-sky-200" />
+          <CardTitle className="weather-text-strong text-xl">AI Summary</CardTitle>
         </div>
         <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="w-8 h-8 rounded-full hover:bg-white/10"
-            aria-label="Refresh AI summary"
+          variant="ghost"
+          size="icon"
+          onClick={onRefresh}
+          disabled={isLoading || isDisabled}
+          className="h-8 w-8 rounded-full hover:bg-white/10"
+          aria-label="Refresh AI summary"
         >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading && !narrative ? (
-            <div className="space-y-2">
-                <Skeleton className="h-4 w-full bg-white/10" />
-                <Skeleton className="h-4 w-5/6 bg-white/10" />
-            </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full bg-white/10" />
+            <Skeleton className="h-4 w-5/6 bg-white/10" />
+          </div>
         ) : (
-            <p className="text-base text-foreground/80">{narrative}</p>
+          <div className="weather-copy-zone rounded-2xl px-4 py-3">
+            <p className="weather-text-soft text-base leading-7 text-white/92">
+              {narrative ?? "Weather guidance will appear here once conditions load."}
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -40,3 +40,9 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# env files
+.env
+.env.local
+.env.*.local
+!.env.example

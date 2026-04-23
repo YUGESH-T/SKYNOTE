@@ -1,204 +1,191 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { type WeatherData } from '@/lib/weather-data';
-import CurrentWeather from './current-weather';
-import LocationSelector from './location-selector';
-import { Loader2, Compass } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { getWeatherData } from '@/ai/flows/get-weather-data';
-import { getWeatherNarrative } from '@/ai/flows/get-weather-narrative';
-import { cn } from '@/lib/utils';
-import type { GetWeatherDataInput } from '@/ai/flows/get-weather-data';
-import WeatherNarrative from './weather-narrative';
+import dynamic from "next/dynamic";
+import { Compass } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import CurrentWeather from "./current-weather";
+import SunriseSunset from "./sunrise-sunset";
+import WeatherNarrative from "./weather-narrative";
+import WeatherStatus from "./weather-status";
+import WeatherToolbar from "./weather-toolbar";
+import { useTemperatureUnit } from "@/hooks/use-temperature-unit";
+import { useWeatherDashboard } from "@/hooks/use-weather-dashboard";
+import type { TimeOfDay, WeatherCondition } from "@/lib/weather-data";
 
-const WeatherVisualization = dynamic(() => import('./weather-visualization'), {
+const WeatherVisualization = dynamic(() => import("./weather-visualization"), {
   ssr: false,
   loading: () => null,
 });
 
-const DailyTemperatureTrend = dynamic(() => import('./daily-temperature-trend'), {
+const DailyTemperatureTrend = dynamic(() => import("./daily-temperature-trend"), {
   loading: () => (
     <div className="h-[220px] w-full animate-pulse rounded-lg bg-white/10" />
   ),
 });
 
-const WeatherForecast = dynamic(() => import('./weather-forecast'), {
+const WeatherForecast = dynamic(() => import("./weather-forecast"), {
   loading: () => (
     <div className="h-[320px] w-full animate-pulse rounded-lg bg-white/10" />
   ),
 });
 
-const InteractiveHourlyForecast = dynamic(() => import('./interactive-hourly-forecast'), {
-  loading: () => (
-    <div className="h-[180px] w-full animate-pulse rounded-lg bg-white/10" />
-  ),
-});
+const InteractiveHourlyForecast = dynamic(
+  () => import("./interactive-hourly-forecast"),
+  {
+    loading: () => (
+      <div className="h-[180px] w-full animate-pulse rounded-lg bg-white/10" />
+    ),
+  }
+);
 
-const SunriseSunset = dynamic(() => import('./sunrise-sunset'), {
-  loading: () => (
-    <div className="h-[160px] w-full animate-pulse rounded-lg bg-white/10" />
-  ),
-});
-
-const weatherColorClasses: Record<string, string> = {
-  Sunny: "from-sky-400 to-blue-600",
-  Cloudy: "from-[#061a57] via-[#5a5c6a] to-[#a7a8b2]",
-  Rainy: "from-indigo-600/80 to-slate-900/80",
-  Snowy: "from-blue-300 to-cyan-500",
-  Thunderstorm: "from-gray-800 via-gray-900 to-black",
-  Fog: "from-slate-400 to-gray-500",
-  Haze: "from-yellow-200 to-amber-400",
+const weatherColorClasses: Record<WeatherCondition, Record<TimeOfDay, string>> = {
+  Sunny: {
+    morning: "from-amber-200 via-sky-300 to-blue-500",
+    afternoon: "from-sky-300 via-cyan-400 to-blue-700",
+    night: "from-slate-950 via-blue-950 to-sky-900",
+  },
+  Cloudy: {
+    morning: "from-slate-300 via-slate-400 to-sky-600",
+    afternoon: "from-slate-500 via-slate-600 to-slate-900",
+    night: "from-slate-900 via-slate-950 to-black",
+  },
+  Rainy: {
+    morning: "from-slate-500 via-blue-700 to-slate-900",
+    afternoon: "from-slate-700 via-indigo-900 to-slate-950",
+    night: "from-slate-950 via-black to-blue-950",
+  },
+  Snowy: {
+    morning: "from-sky-100 via-cyan-200 to-blue-400",
+    afternoon: "from-cyan-100 via-sky-300 to-blue-500",
+    night: "from-slate-900 via-blue-900 to-cyan-900",
+  },
+  Thunderstorm: {
+    morning: "from-slate-700 via-indigo-900 to-slate-950",
+    afternoon: "from-slate-900 via-violet-950 to-black",
+    night: "from-black via-slate-950 to-indigo-950",
+  },
+  Fog: {
+    morning: "from-slate-200 via-slate-400 to-slate-600",
+    afternoon: "from-slate-400 via-slate-600 to-slate-800",
+    night: "from-slate-800 via-slate-900 to-black",
+  },
+  Haze: {
+    morning: "from-amber-100 via-orange-200 to-sky-400",
+    afternoon: "from-amber-200 via-yellow-300 to-orange-500",
+    night: "from-slate-900 via-amber-950 to-slate-950",
+  },
 };
 
 export default function WeatherDashboard() {
-  const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
-  const [weatherNarrative, setWeatherNarrative] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isSearching, startSearching] = useTransition();
-  const [isGeneratingNarrative, startGeneratingNarrative] = useTransition();
-  const [geolocationStatus, setGeolocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const { unit, setUnit } = useTemperatureUnit();
+  const {
+    weather,
+    narrative,
+    weatherError,
+    statusMessage,
+    geolocationState,
+    isInitialLoading,
+    isRefreshing,
+    isGeneratingNarrative,
+    recentSearches,
+    search,
+    refresh,
+    refreshNarrative,
+  } = useWeatherDashboard();
 
-  const { toast } = useToast();
+  const backgroundClass = weather
+    ? weatherColorClasses[weather.condition][weather.timeOfDay]
+    : "from-gray-900 to-slate-900";
 
-  const handleFetchNarrative = useCallback(async (weatherData: WeatherData) => {
-    startGeneratingNarrative(async () => {
-      try {
-        const result = await getWeatherNarrative(weatherData);
-        setWeatherNarrative(result.narrative);
-      } catch (error) {
-        console.error("Failed to fetch weather narrative:", error);
-        setWeatherNarrative("Could not generate a weather summary at this time.");
-      }
-    });
-  }, []);
+  const emptyTitle = isInitialLoading
+    ? "Fetching local weather"
+    : weatherError
+      ? "Weather lookup unavailable"
+      : "Welcome to SKYNOTE";
 
-  const handleLocationSearch = useCallback((params: GetWeatherDataInput) => {
-    startSearching(async () => {
-      if (!params.location && !(typeof params.lat === 'number' && typeof params.lon === 'number')) return;
-      
-      setWeatherNarrative(null);
-
-      try {
-        const newWeather = await getWeatherData(params);
-        setCurrentWeather(newWeather);
-        handleFetchNarrative(newWeather);
-        if (params.lat && params.lon && geolocationStatus !== 'success') {
-            toast({
-                title: `Weather updated for your location`,
-                description: `Currently ${newWeather.condition}, ${newWeather.temperature}°C.`,
-            });
-        }
-      } catch (error: any) {
-        console.error("Failed to fetch weather data:", error);
-        toast({
-          variant: "destructive",
-          title: "Search Failed",
-          description: error.message || "Could not fetch weather data for that location.",
-        });
-        if (!currentWeather) {
-            setGeolocationStatus('error');
-        }
-      }
-    });
-  }, [toast, currentWeather, geolocationStatus, handleFetchNarrative]);
-
-
-  useEffect(() => {
-    setIsMounted(true);
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          handleLocationSearch({ lat: latitude, lon: longitude });
-          setGeolocationStatus('success');
-        },
-        (error) => {
-          console.warn(`Geolocation error: ${error.message}`);
-          handleLocationSearch({ location: 'New York' });
-          setGeolocationStatus('error');
-          if (error.code !== error.PERMISSION_DENIED) {
-            toast({
-                title: "Geolocation unavailable",
-                description: "Showing weather for New York. You can search for another city.",
-            });
-          }
-        },
-        { timeout: 5000 }
-      );
-    } else {
-        handleLocationSearch({ location: 'New York' });
-        setGeolocationStatus('error');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!isMounted) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-white" />
-      </div>
-    );
-  }
-
-  const backgroundClass = currentWeather ? (weatherColorClasses[currentWeather.condition] || "from-gray-500 to-gray-700") : "from-gray-900 to-slate-900";
-  
-  const showWelcomeMessage = geolocationStatus === 'error' && !currentWeather;
-  const isLoading = isSearching || (geolocationStatus === 'pending' && !currentWeather);
+  const emptyDescription = isInitialLoading
+    ? "Checking your location and loading the latest forecast."
+    : weatherError ||
+      statusMessage ||
+      "Search for a city to explore the latest forecast with a visual weather scene.";
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-background">
-        <div className={cn("absolute inset-0 z-0 bg-gradient-to-br transition-colors duration-1000", backgroundClass)}>
-            {currentWeather && (
-              <WeatherVisualization weatherCondition={currentWeather.condition} />
-            )}
-        </div>
+    <div className="relative min-h-screen w-full overflow-hidden bg-background">
+      <div
+        className={cn(
+          "absolute inset-0 z-0 bg-gradient-to-br transition-colors duration-1000",
+          backgroundClass
+        )}
+      >
+        {weather ? (
+          <WeatherVisualization
+            weatherCondition={weather.condition}
+            timeOfDay={weather.timeOfDay}
+            localHour={weather.localHour}
+          />
+        ) : null}
+        <div className="weather-vignette pointer-events-none absolute inset-0" />
+        <div className="weather-noise pointer-events-none absolute inset-0 opacity-40" />
+      </div>
 
-        <div className={cn("relative z-10 h-screen w-full overflow-y-auto no-scrollbar", isLoading && "pointer-events-none")}>
-             <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
-                <div className="w-full">
-                    {currentWeather ? (
-                             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
-                                {/* Left Column */}
-                                <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
-                                    <LocationSelector onLocationSearch={(location) => handleLocationSearch({ location })} isLoading={isSearching} initialLocation={currentWeather.location} />
-                                    <CurrentWeather data={currentWeather} />
-                                    <WeatherNarrative 
-                                        narrative={weatherNarrative} 
-                                        isLoading={isGeneratingNarrative}
-                                        onRefresh={() => handleFetchNarrative(currentWeather)}
-                                    />
-                                    <InteractiveHourlyForecast data={currentWeather} />
-                                    <SunriseSunset sunrise={currentWeather.sunrise} sunset={currentWeather.sunset} />
-                                </div>
-                                {/* Right Column */}
-                                <div className="lg:col-span-2 flex flex-col gap-4 md:gap-6">
-                                    <DailyTemperatureTrend data={currentWeather} />
-                                    <WeatherForecast data={currentWeather} />
-                                </div>
-                            </div>
-                    ): (
-                        <div className="flex-grow flex flex-col items-center justify-center bg-black/20 backdrop-blur-xl border border-white/10 shadow-lg rounded-lg p-6 text-center min-h-[50vh] mt-20 max-w-lg mx-auto">
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="h-12 w-12 animate-spin text-white mb-4" />
-                                    <p className="text-white/70">Fetching local weather...</p>
-                                </>
-                            ) : showWelcomeMessage ? (
-                                <>
-                                    <LocationSelector onLocationSearch={(location) => handleLocationSearch({ location })} isLoading={isSearching} />
-                                    <Compass className="h-16 w-16 text-white/90 my-4" />
-                                    <h2 className="text-2xl font-bold mb-2 text-white">Welcome to SKYNOTE</h2>
-                                    <p className="text-white/70 text-base">Enter a city to get the latest weather forecast and see a beautiful 3D visualization.</p>
-                                </>
-                            ) : null}
-                        </div>
-                    )}
-                </div>
+      <div className="relative z-10 min-h-screen w-full overflow-y-auto no-scrollbar">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
+          <WeatherToolbar
+            isLoading={isInitialLoading || isRefreshing}
+            unit={unit}
+            currentLocation={weather?.location}
+            recentSearches={recentSearches}
+            onSearch={(location) => search({ location })}
+            onRefresh={refresh}
+            onUnitChange={setUnit}
+          />
+
+          {statusMessage ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className="border-white/15 bg-white/10 px-3 py-1 text-white/88 backdrop-blur-md"
+              >
+                <Compass className="mr-1 h-3 w-3" />
+                {geolocationState.charAt(0).toUpperCase() + geolocationState.slice(1)}
+              </Badge>
+              <p className="text-sm text-white/80">{statusMessage}</p>
             </div>
+          ) : null}
+
+          {weather ? (
+            <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-5">
+              <div className="flex flex-col gap-4 md:gap-6 lg:col-span-3">
+                <CurrentWeather
+                  data={weather}
+                  unit={unit}
+                  isRefreshing={isRefreshing}
+                  onRefresh={refresh}
+                />
+                <WeatherNarrative
+                  narrative={narrative}
+                  isLoading={isGeneratingNarrative}
+                  onRefresh={refreshNarrative}
+                  isDisabled={!weather}
+                />
+                <InteractiveHourlyForecast data={weather} unit={unit} />
+                <SunriseSunset sunrise={weather.sunrise} sunset={weather.sunset} />
+              </div>
+              <div className="flex flex-col gap-4 md:gap-6 lg:col-span-2">
+                <DailyTemperatureTrend data={weather} unit={unit} />
+                <WeatherForecast data={weather} unit={unit} />
+              </div>
+            </div>
+          ) : (
+            <WeatherStatus
+              isLoading={isInitialLoading}
+              title={emptyTitle}
+              description={emptyDescription}
+            />
+          )}
         </div>
+      </div>
     </div>
   );
 }

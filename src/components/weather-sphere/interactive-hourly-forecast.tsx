@@ -1,34 +1,59 @@
+import { CloudRain, Droplets, Wind } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { WeatherData } from "@/lib/weather-data";
+import {
+  formatTemperature,
+  formatWindSpeed,
+  type TemperatureUnit,
+  type WeatherData,
+} from "@/lib/weather-data";
 import WeatherIcon from "./weather-icon";
-import { Wind, Droplets } from "lucide-react";
 
 interface InteractiveHourlyForecastProps {
   data: WeatherData;
+  unit: TemperatureUnit;
 }
 
-export default function InteractiveHourlyForecast({ data }: InteractiveHourlyForecastProps) {
+export default function InteractiveHourlyForecast({
+  data,
+  unit,
+}: InteractiveHourlyForecastProps) {
   return (
-    <Card className="bg-black/20 backdrop-blur-xl border-white/10 shadow-lg transition-all duration-300 ease-in-out">
+    <Card className="weather-panel transition-all duration-300 ease-in-out">
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Next 24 Hours</CardTitle>
+        <CardTitle className="weather-text-strong text-lg md:text-xl">
+          Next 24 Hours
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex space-x-4 overflow-x-auto pb-4 no-scrollbar">
           {data.hourly.map((item, index) => (
-            <div key={index} className="flex flex-col items-center space-y-2 flex-shrink-0 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200 w-28 text-center">
-              <p className="text-sm font-medium text-foreground/90">{item.time}</p>
-              <WeatherIcon condition={item.condition} className="w-9 h-9 text-white drop-shadow-lg" />
-              <p className="text-xl font-bold">{item.temperature}°C</p>
-              <div className="flex flex-col items-center text-xs text-foreground/70 space-y-1 pt-1 w-full">
-                  <div className="flex items-center gap-1.5">
-                    <Wind className="w-3.5 h-3.5" />
-                    <span>{item.windSpeed} km/h</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Droplets className="w-3.5 h-3.5" />
-                    <span>{item.humidity}%</span>
-                  </div>
+            <div
+              key={`${item.time}-${index}`}
+              className="weather-panel-interactive flex w-32 flex-shrink-0 flex-col items-center space-y-2 rounded-lg p-3 text-center"
+            >
+              <p className="weather-text-soft text-sm font-semibold text-white/92">
+                {item.time}
+              </p>
+              <WeatherIcon
+                condition={item.condition}
+                className="h-9 w-9 text-white drop-shadow-lg"
+              />
+              <p className="weather-text-soft text-xl font-bold text-white">
+                {formatTemperature(item.temperatureC, unit)}
+              </p>
+              <div className="flex w-full flex-col items-center space-y-1 pt-1 text-xs text-white/78">
+                <div className="flex items-center gap-1.5">
+                  <Wind className="h-3.5 w-3.5 text-white/70" />
+                  <span>{formatWindSpeed(item.windSpeedKph, unit)}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Droplets className="h-3.5 w-3.5 text-white/70" />
+                  <span>{item.humidity}%</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CloudRain className="h-3.5 w-3.5 text-white/70" />
+                  <span>{item.precipitationChance ?? 0}%</span>
+                </div>
               </div>
             </div>
           ))}
